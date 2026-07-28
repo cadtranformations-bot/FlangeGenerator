@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <style>
+      .outline { fill: #d9d9d9; stroke: #333333; stroke-width: 1.5; }
+      .hole { fill: #ffffff; stroke: #333333; stroke-width: 1.2; }
+      .centerline { stroke: #999999; stroke-width: 0.5; stroke-dasharray: 3,2; }
+    </style>
+  </defs>
+  <!-- Outer flange body -->
+  <circle cx="64" cy="64" r="58" class="outline" />
+  <!-- Center bore -->
+  <circle cx="64" cy="64" r="18" class="hole" />
+  <!-- Centerlines -->
+  <line x1="64" y1="4" x2="64" y2="124" class="centerline" />
+  <line x1="4" y1="64" x2="124" y2="64" class="centerline" />
+  <!-- 6 bolt holes evenly spaced on a bolt circle -->
+  <g>
+    <circle cx="64" cy="21" r="6" class="hole" />
+    <circle cx="101.24" cy="42.5" r="6" class="hole" />
+    <circle cx="101.24" cy="85.5" r="6" class="hole" />
+    <circle cx="64" cy="107" r="6" class="hole" />
+    <circle cx="26.76" cy="85.5" r="6" class="hole" />
+    <circle cx="26.76" cy="42.5" r="6" class="hole" />
+  </g>
+  <!-- Bolt circle reference (dashed, subtle) -->
+  <circle cx="64" cy="64" r="43" fill="none" stroke="#bbbbbb" stroke-width="0.6" stroke-dasharray="2,2" />
+</svg>
