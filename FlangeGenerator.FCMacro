@@ -11,5 +11,161 @@ __Wiki__ = ''
 __Icon__ = 'FlangeGenerator.svg'
 __Help__ = 'Run the macro from the Macro menu or toolbar, fill in the dialog fields, click OK to build the flange.'
 __Status__ = 'Beta'
-__Requires__ = 'FreeCAD >= 0.21'
+__Requires__ = 'FreeCAD >= 1.0'
 __Files__ = 'FlangeGenerator.svg'
+
+import FreeCAD as App
+import Part
+from PySide6 import QtWidgets
+
+print("DEBUG: script started")
+
+
+class FlangeDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Flange Generator")
+        layout = QtWidgets.QFormLayout(self)
+
+        self.od = QtWidgets.QDoubleSpinBox()
+        self.od.setRange(1, 2000)
+        self.od.setValue(150)
+        layout.addRow("Outer Diameter (mm):", self.od)
+
+        self.id_ = QtWidgets.QDoubleSpinBox()
+        self.id_.setRange(1, 2000)
+        self.id_.setValue(60)
+        layout.addRow("Inner Diameter (mm):", self.id_)
+
+        self.thickness = QtWidgets.QDoubleSpinBox()
+        self.thickness.setRange(1, 500)
+        self.thickness.setValue(10)
+        layout.addRow("Thickness (mm):", self.thickness)
+
+        self.bolt_circle = QtWidgets.QDoubleSpinBox()
+        self.bolt_circle.setRange(1, 2000)
+        self.bolt_circle.setValue(110)
+        layout.addRow("Bolt Circle Diameter (mm):", self.bolt_circle)
+
+        self.hole_size = QtWidgets.QDoubleSpinBox()
+        self.hole_size.setRange(0.5, 100)
+        self.hole_size.setValue(8)
+        layout.addRow("Bolt Hole Diameter (mm):", self.hole_size)
+
+        self.hole_count = QtWidgets.QSpinBox()
+        self.hole_count.setRange(2, 60)
+        self.hole_count.setValue(6)
+        layout.addRow("Number of Holes:", self.hole_count)
+
+        self.new_doc = QtWidgets.QCheckBox("Create new document")
+        self.new_doc.setChecked(True)
+        layout.addRow(self.new_doc)
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        )
+        buttons.accepted.connect(self.validate_and_accept)
+        buttons.rejected.connect(self.reject)
+        layout.addRow(buttons)
+
+    def validate_and_accept(self):
+        if self.id_.value() >= self.od.value():
+            QtWidgets.QMessageBox.warning(
+                self, "Invalid Input", "Inner Diameter must be smaller than Outer Diameter."
+            )
+            return
+        if self.bolt_circle.value() >= self.od.value():
+            QtWidgets.QMessageBox.warning(
+                self, "Invalid Input", "Bolt Circle Diameter must be smaller than Outer Diameter."
+            )
+            return
+        if self.bolt_circle.value() <= self.id_.value():
+            QtWidgets.QMessageBox.warning(
+                self, "Invalid Input", "Bolt Circle Diameter must be larger than Inner Diameter."
+            )
+            return
+        self.accept()
+
+
+def build_flange(od, id_, thickness, bolt_circle_dia, hole_dia, hole_count, new_doc=True):
+    if new_doc or App.ActiveDocument is None:
+        doc = App.newDocument("Flange")
+    else:
+        doc = App.ActiveDocument
+
+    body = doc.addObject('PartDesign::Body', 'FlangeBody')
+
+    # --- Base pad: outer body ---
+    sketch_pad = body.newObject('Sketcher::SketchObject', 'SketchPad')
+    sketch_pad.AttachmentSupport = (doc.getObject('XY_Plane'), [''])
+    sketch_pad.MapMode = 'FlatFace'
+    sketch_pad.addGeometry(Part.Circle(App.Vector(0, 0, 0), App.Vector(0, 0, 1), od / 2), False)
+    doc.recompute()
+
+    pad = body.newObject('PartDesign::Pad', 'Pad')
+    pad.Profile = sketch_pad
+    pad.Length = thickness
+    doc.recompute()
+
+    # --- Center bore pocket ---
+    sketch_bore = body.newObject('Sketcher::SketchObject', 'SketchBore')
+    sketch_bore.AttachmentSupport = (doc.getObject('XY_Plane'), [''])
+    sketch_bore.MapMode = 'FlatFace'
+    sketch_bore.addGeometry(Part.Circle(App.Vector(0, 0, 0), App.Vector(0, 0, 1), id_ / 2), False)
+    doc.recompute()
+
+    pocket_bore = body.newObject('PartDesign::Pocket', 'PocketBore')
+    pocket_bore.Profile = sketch_bore
+    pocket_bore.BaseFeature = pad
+    pocket_bore.Type = 'ThroughAll'
+    pocket_bore.Reversed = True
+    doc.recompute()
+
+    # --- Single bolt hole sketch (to be patterned) ---
+    sketch_hole = body.newObject('Sketcher::SketchObject', 'SketchBoltHole')
+    sketch_hole.AttachmentSupport = (doc.getObject('XY_Plane'), [''])
+    sketch_hole.MapMode = 'FlatFace'
+    hole_center = App.Vector(bolt_circle_dia / 2, 0, 0)
+    sketch_hole.addGeometry(Part.Circle(hole_center, App.Vector(0, 0, 1), hole_dia / 2), False)
+    doc.recompute()
+
+    pocket_hole = body.newObject('PartDesign::Pocket', 'PocketBoltHole')
+    pocket_hole.Profile = sketch_hole
+    pocket_hole.BaseFeature = pocket_bore
+    pocket_hole.Type = 'ThroughAll'
+    pocket_hole.Reversed = True
+    doc.recompute()
+
+    # --- Polar pattern of bolt holes (uses the Body's own local Z axis, in-scope) ---
+    polar = body.newObject('PartDesign::PolarPattern', 'BoltHolePattern')
+    polar.Originals = [pocket_hole]
+    z_axis = next(f for f in body.Origin.OriginFeatures if 'Z_Axis' in f.Name)
+    polar.Axis = (z_axis, [''])
+    polar.Angle = 360
+    polar.Occurrences = hole_count
+    doc.recompute()
+
+    body.Tip = polar
+    doc.recompute()
+
+    Gui.ActiveDocument.ActiveView.viewIsometric()
+    Gui.SendMsgToActiveView("ViewFit")
+
+    return body
+
+
+print("DEBUG: about to show dialog")
+
+dialog = FlangeDialog(parent=Gui.getMainWindow())
+if dialog.exec_() == QtWidgets.QDialog.Accepted:
+    print("DEBUG: dialog accepted, building flange")
+    build_flange(
+        od=dialog.od.value(),
+        id_=dialog.id_.value(),
+        thickness=dialog.thickness.value(),
+        bolt_circle_dia=dialog.bolt_circle.value(),
+        hole_dia=dialog.hole_size.value(),
+        hole_count=dialog.hole_count.value(),
+        new_doc=dialog.new_doc.isChecked(),
+    )
+    print("DEBUG: build complete")
