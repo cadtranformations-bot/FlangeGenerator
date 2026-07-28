@@ -1,0 +1,15 @@
+"""Generates a parametric bolted flange from user-specified dimensions."""
+
+__Name__ = 'FlangeGenerator'
+__Comment__ = 'Parametric flange generator with dialog for OD, ID, thickness, bolt circle, hole size, and hole count'
+__Author__ = 'Rudo'
+__Date__ = '2026-07-28'
+__Version__ = '0.1.0'
+__License__ = 'MIT'
+__Web__ = 'https://github.com/cadtranformations-bot/FlangeGenerator'
+__Wiki__ = ''
+__Icon__ = 'FlangeGenerator.svg'
+__Help__ = 'Run the macro from the Macro menu or toolbar, fill in the dialog fields, click OK to build the flange.'
+__Status__ = 'Beta'
+__Requires__ = 'FreeCAD >= 0.21'
+__Files__ = 'FlangeGenerator.svg'
