@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+    <name>FlangeGenerator</name>
+    <description>Parametric flange generator with a dialog for OD, ID, thickness, bolt circle, hole size, and hole count.</description>
+    <version>0.1.0</version>
+    <date>2026-07-28</date>
+    <content>
+        <macro>
+            <file>FlangeGenerator.FCMacro</file>
+        </macro>
+    </content>
+    <license>MIT</license>
+    <url type="repository" branch="main">https://github.com/cadtranformations-bot/FlangeGenerator.git</url>
+    <maintainer email="you@example.com">Rudo</maintainer>
+    <freecadmin>0.21</freecadmin>
+</package>
