@@ -1,10 +1,10 @@
-"""Generates a parametric bolted flange from user-specified dimensions."""
+"""Generates a parametric bolted custom-flange from user-specified dimensions."""
 
 __Name__ = 'FlangeGenerator'
 __Comment__ = 'Parametric flange generator with dialog for OD, ID, thickness, bolt circle, hole size, and hole count'
 __Author__ = 'Rudo'
-__Date__ = '2026-07-28'
-__Version__ = '0.1.0'
+__Date__ = '2026-08-02'
+__Version__ = '0.1.1'
 __License__ = 'MIT'
 __Web__ = 'https://github.com/cadtranformations-bot/FlangeGenerator'
 __Wiki__ = ''
@@ -14,10 +14,12 @@ __Status__ = 'Beta'
 __Requires__ = 'FreeCAD >= 1.0'
 __Files__ = 'FlangeGenerator.svg'
 
+import os
 import FreeCAD as App
 import Part
 import FreeCADGui as Gui
 from PySide6 import QtWidgets
+from PySide6.QtSvgWidgets import QSvgWidget
 
 
 class FlangeDialog(QtWidgets.QDialog):
@@ -25,6 +27,19 @@ class FlangeDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle("Flange Generator")
         layout = QtWidgets.QFormLayout(self)
+
+        # --- Flange preview image ---
+        icon_path = os.path.join(App.getUserMacroDir(True), "FlangeGenerator.svg")
+        if os.path.exists(icon_path):
+            svg_widget = QSvgWidget(icon_path)
+            svg_widget.setFixedSize(120, 120)
+            preview_row = QtWidgets.QHBoxLayout()
+            preview_row.addStretch()
+            preview_row.addWidget(svg_widget)
+            preview_row.addStretch()
+            layout.addRow(preview_row)
+        else:
+            print(f"DEBUG: icon not found at {icon_path}")
 
         self.od = QtWidgets.QDoubleSpinBox()
         self.od.setRange(1, 2000)
